@@ -37,7 +37,26 @@ The generator creates a complete backend project with:
 
 ## Installation
 
-### Option 1: Download Binary
+### Option 1: Install Globally (Recommended)
+
+```bash
+# Install the CLI tool
+go install github.com/ThinhDangDev/go-boilerplate@latest
+
+# Ensure Go's bin directory is in your PATH
+# Add this to your ~/.bashrc, ~/.zshrc, or ~/.profile if not already present:
+export PATH=$PATH:$(go env GOPATH)/bin
+
+# Reload your shell configuration
+source ~/.zshrc  # or source ~/.bashrc
+
+# Verify installation
+go-boilerplate --version
+```
+
+**Note:** If `go-boilerplate` command is not found after installation, your `$GOPATH/bin` is not in your PATH. The binary is installed at `$(go env GOPATH)/bin/go-boilerplate`.
+
+### Option 2: Build from Source
 
 ```bash
 # Clone the repository
@@ -46,12 +65,9 @@ cd go-boilerplate
 
 # Build the binary
 go build -o go-boilerplate .
-```
 
-### Option 2: Install Globally
-
-```bash
-go install github.com/ThinhDangDev/go-boilerplate@latest
+# Run locally
+./go-boilerplate --version
 ```
 
 ## Usage
@@ -61,6 +77,10 @@ go install github.com/ThinhDangDev/go-boilerplate@latest
 Simply run the command and follow the prompts:
 
 ```bash
+# If installed globally
+go-boilerplate init
+
+# If built from source
 ./go-boilerplate init
 ```
 
@@ -98,10 +118,12 @@ Provide all configuration via command-line flags:
 
 ## Examples
 
+**Note:** Use `go-boilerplate` if installed globally, or `./go-boilerplate` if built from source.
+
 ### Basic Project (REST + gRPC only)
 
 ```bash
-./go-boilerplate init \
+go-boilerplate init \
   --name=simple-api \
   --module=github.com/mycompany/simple-api
 ```
@@ -109,7 +131,7 @@ Provide all configuration via command-line flags:
 ### Full-Featured Project
 
 ```bash
-./go-boilerplate init \
+go-boilerplate init \
   --name=user-service \
   --module=github.com/mycompany/user-service \
   --features=auth,observability,docker
@@ -118,10 +140,11 @@ Provide all configuration via command-line flags:
 ### E-commerce Backend
 
 ```bash
-./go-boilerplate init \
+go-boilerplate init \
   --name=ecommerce-api \
   --module=github.com/myshop/ecommerce-api \
-  --features=auth,observability,docker
+  --features=auth,observability,docker \
+  --config=yaml
 ```
 
 ## After Generation
