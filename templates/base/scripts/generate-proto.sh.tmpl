@@ -1,0 +1,22 @@
+#!/bin/bash
+# Script to generate code from proto files
+
+set -e
+
+echo "Generating code from proto files..."
+
+# Check if buf is installed
+if ! command -v buf &> /dev/null; then
+    echo "Error: buf is not installed. Install it from https://buf.build"
+    exit 1
+fi
+
+# Navigate to api directory
+cd api
+
+# Generate Go code, gRPC stubs, and OpenAPI documentation
+buf generate
+
+echo "✓ Proto code generation complete"
+echo "  - Generated Go code in internal/gen/"
+echo "  - Generated OpenAPI spec in api/openapi/"

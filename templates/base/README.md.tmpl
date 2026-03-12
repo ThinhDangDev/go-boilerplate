@@ -1,12 +1,14 @@
 # {{.ProjectName}}
 
-Production-ready Go backend with clean architecture, REST + gRPC support.
+Production-ready Go backend with clean architecture, REST + gRPC support, and PostgreSQL persistence.
 
 ## Features
 
 - ✅ Clean 4-layer architecture (domain, application, ports, adapters)
-- ✅ REST + gRPC dual protocol support
-- ✅ PostgreSQL with type-safe queries
+- ✅ **Dual Protocol**: REST (via grpc-gateway) + gRPC APIs
+- ✅ **PostgreSQL** with pgx driver and sqlc for type-safe queries
+- ✅ **buf** for proto management and code generation
+- ✅ **Database migrations** with golang-migrate
 {{- if .Features.Auth}}
 - ✅ JWT authentication + OAuth2
 {{- end}}
@@ -22,6 +24,9 @@ Production-ready Go backend with clean architecture, REST + gRPC support.
 ### Prerequisites
 
 - Go 1.22+
+- [buf CLI](https://buf.build) for proto generation
+- [sqlc](https://sqlc.dev) for SQL code generation
+- [golang-migrate](https://github.com/golang-migrate/migrate) for database migrations
 {{- if .Features.Docker}}
 - Docker + Docker Compose
 {{- end}}
@@ -33,9 +38,20 @@ Production-ready Go backend with clean architecture, REST + gRPC support.
 go mod download
 
 {{- if .Features.Docker}}
-# Start services (PostgreSQL, Redis, etc.)
+# Start services (PostgreSQL{{if .Features.Auth}}, Redis{{end}}{{if .Features.Observability}}, Prometheus, Grafana{{end}})
 docker-compose up -d
+{{- else}}
+# Ensure PostgreSQL is running on localhost:5432
 {{- end}}
+
+# Generate code from proto files
+make proto
+
+# Generate Go code from SQL queries
+make sqlc
+
+# Run database migrations
+make migrate-up
 
 # Run the server
 make run
@@ -43,9 +59,11 @@ make run
 
 ### Endpoints
 
-- **REST**: `http://localhost:8080/api/v1/`
-- **gRPC**: `localhost:9090`
-- **Health**: `http://localhost:8080/health`
+- **REST API**: `http://localhost:8080/api/v1/`
+- **gRPC API**: `localhost:9090`
+- **Health Check**:
+  - REST: `http://localhost:8080/api/v1/health`
+  - gRPC: `grpcurl -plaintext localhost:9090 api.v1.HealthService/Check`
 {{- if .Features.Observability}}
 - **Metrics**: `http://localhost:8080/metrics`
 {{- end}}
@@ -55,38 +73,119 @@ make run
 ```
 .
 ├── cmd/
-│   └── server/          # Application entry point
+│   └── server/          # Application entry point (HTTP + gRPC servers)
 ├── internal/
 │   ├── domain/          # Business entities
 │   ├── application/     # Use cases
-│   ├── ports/           # HTTP/gRPC handlers
-│   └── adapters/        # External integrations
+│   ├── ports/           # Interface adapters
+│   │   ├── http/        # REST endpoints (grpc-gateway)
+│   │   └── grpc/        # gRPC service implementations
+│   ├── adapters/        # External integrations
+│   │   └── postgres/    # Database adapter (pgx + sqlc)
+│   ├── config/          # Configuration management
+│   └── gen/             # Generated proto code (auto-generated)
+├── api/
+│   ├── proto/v1/        # Protocol buffer definitions
+│   ├── buf.yaml         # buf configuration
+│   └── buf.gen.yaml     # Code generation config
+├── migrations/          # SQL migration files
+├── scripts/             # Helper scripts
 ├── pkg/                 # Shared packages
-├── configs/             # Configuration files
 └── tests/               # Integration and E2E tests
 ```
 
 ## Development
 
+### Generate Code
+
 ```bash
-# Run tests
+# Generate Go code from proto files
+make proto
+
+# Generate Go code from SQL queries
+make sqlc
+```
+
+### Database Migrations
+
+```bash
+# Apply migrations
+make migrate-up
+
+# Rollback last migration
+make migrate-down
+
+# Check migration version
+make migrate-version
+```
+
+### Testing
+
+```bash
+# Run all tests
 make test
 
-# Run linter
-make lint
+# Run integration tests
+make test-integration
 
+# Run with coverage
+go test -cover ./...
+```
+
+### Linting
+
+```bash
+make lint
+```
+
+### Building
+
+```bash
 # Build binary
 make build
+
+# Run binary
+./bin/server
 ```
 
 ## Configuration
 
-Configuration is managed via Viper. Edit `configs/config.dev.yaml` for development settings.
+Configuration is managed via Viper with YAML files and environment variable overrides.
 
-Environment variables override config file values:
+**Config file**: `configs/config.dev.yaml` (development) or `configs/config.prod.yaml` (production)
+
+**Environment variables** (prefix with `APP_`):
 ```bash
-export APP_PORT=8080
-export DB_HOST=localhost
+export APP_SERVER_PORT=8080
+export APP_DATABASE_HOST=localhost
+export APP_DATABASE_PORT=5432
+export APP_DATABASE_NAME={{.ProjectName}}_dev
+export APP_DATABASE_USER=postgres
+export APP_DATABASE_PASSWORD=postgres
+```
+
+## gRPC API
+
+The gRPC API is automatically exposed as REST via grpc-gateway. All proto definitions are in `api/proto/v1/`.
+
+### Testing gRPC Endpoints
+
+**Using grpcurl**:
+```bash
+# List services
+grpcurl -plaintext localhost:9090 list
+
+# Call health check
+grpcurl -plaintext localhost:9090 api.v1.HealthService/Check
+
+# Call ready check
+grpcurl -plaintext localhost:9090 api.v1.HealthService/Ready
+```
+
+**Using REST (grpc-gateway)**:
+```bash
+curl http://localhost:8080/api/v1/health
+curl http://localhost:8080/api/v1/ready
 ```
 
 ## License

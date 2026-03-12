@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "{{.ModuleName}}/internal/gen/api/v1;apiv1";
+
+import "google/api/annotations.proto";
+
+// HealthService provides health check and readiness endpoints
+service HealthService {
+  // Check returns the service health status
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/health"
+    };
+  }
+
+  // Ready checks if the service is ready to accept requests
+  rpc Ready(ReadyRequest) returns (ReadyResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/ready"
+    };
+  }
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  enum Status {
+    UNKNOWN = 0;
+    HEALTHY = 1;
+    UNHEALTHY = 2;
+  }
+
+  Status status = 1;
+  string version = 2;
+  int64 uptime_seconds = 3;
+}
+
+message ReadyRequest {}
+
+message ReadyResponse {
+  bool ready = 1;
+  map<string, string> checks = 2; // Component -> status (e.g., "database": "ok")
+}

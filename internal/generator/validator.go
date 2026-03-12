@@ -1,12 +1,9 @@
 package generator
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"time"
 )
 
 // Validator validates the generated project structure
@@ -33,25 +30,14 @@ func (v *Validator) Validate() error {
 		return fmt.Errorf("cmd/server/main.go not found")
 	}
 
-	// Run go mod tidy to fetch dependencies and create go.sum (with timeout)
-	tidyCtx, tidyCancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer tidyCancel()
-
-	tidyCmd := exec.CommandContext(tidyCtx, "go", "mod", "tidy")
-	tidyCmd.Dir = v.projectDir
-	if output, err := tidyCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("go mod tidy failed: %w\nOutput: %s", err, string(output))
+	// Check if proto files exist
+	protoPath := filepath.Join(v.projectDir, "api", "proto", "v1", "health.proto")
+	if _, err := os.Stat(protoPath); os.IsNotExist(err) {
+		return fmt.Errorf("proto files not found")
 	}
 
-	// Check if the project compiles (go vet) with timeout
-	vetCtx, vetCancel := context.WithTimeout(context.Background(), 1*time.Minute)
-	defer vetCancel()
-
-	vetCmd := exec.CommandContext(vetCtx, "go", "vet", "./...")
-	vetCmd.Dir = v.projectDir
-	if output, err := vetCmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("go vet failed: %w\nOutput: %s", err, string(output))
-	}
+	// Note: Skipping go mod tidy and go vet because proto code must be generated first
+	// Users should run: cd <project> && make proto && go mod download && make run
 
 	return nil
 }

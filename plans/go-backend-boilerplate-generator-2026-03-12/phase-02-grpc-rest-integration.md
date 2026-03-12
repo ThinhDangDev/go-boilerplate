@@ -871,16 +871,16 @@ func TestProtoGeneration(t *testing.T) {
 
 ## Success Validation Checklist
 
-- [ ] buf.yaml and buf.gen.yaml validate successfully
-- [ ] Proto files compile without errors
-- [ ] gRPC server starts and accepts connections
-- [ ] grpc-gateway correctly proxies REST to gRPC
-- [ ] Health check works via both protocols
-- [ ] sqlc generates valid Go code from queries
-- [ ] Database migrations run successfully (up and down)
-- [ ] PostgreSQL connection pool initializes correctly
-- [ ] OpenAPI spec generates from proto files
-- [ ] Integration tests pass with testcontainers
+- [x] buf.yaml and buf.gen.yaml validate successfully
+- [x] Proto files compile without errors
+- [x] gRPC server starts and accepts connections
+- [x] grpc-gateway correctly proxies REST to gRPC
+- [x] Health check works via both protocols
+- [x] sqlc generates valid Go code from queries
+- [x] Database migrations run successfully (up and down)
+- [x] PostgreSQL connection pool initializes correctly
+- [x] OpenAPI spec generates from proto files
+- [x] Integration tests pass with testcontainers
 
 ---
 

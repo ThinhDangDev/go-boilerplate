@@ -1,0 +1,9 @@
+-- Initial database schema
+CREATE TABLE IF NOT EXISTS health_checks (
+    id SERIAL PRIMARY KEY,
+    checked_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    status VARCHAR(50) NOT NULL,
+    message TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_health_checks_checked_at ON health_checks(checked_at DESC);

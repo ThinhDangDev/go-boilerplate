@@ -22,8 +22,8 @@ type Config struct {
 
 // ServerConfig holds server settings
 type ServerConfig struct {
-	Port int
-	Host string
+	Port        int
+	Host        string
 	Environment string
 }
 
@@ -85,6 +85,7 @@ func Load() (*Config, error) {
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("server.host", "0.0.0.0")
 	v.SetDefault("server.environment", "development")
+	v.SetDefault("database.port", 5432)
 	v.SetDefault("database.sslmode", "disable")
 
 	// Enable environment variable override

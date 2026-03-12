@@ -69,16 +69,47 @@ func (g *Generator) generateBaseStructure(cfg *config.Config) error {
 		template string
 		output   string
 	}{
+		// Root files
 		{"base/go.mod.tmpl", "go.mod"},
 		{"base/.gitignore.tmpl", ".gitignore"},
 		{"base/Makefile.tmpl", "Makefile"},
 		{"base/README.md.tmpl", "README.md"},
+
+		// Application entry
 		{"base/cmd/server/main.go.tmpl", "cmd/server/main.go"},
+
+		// Configuration
 		{"base/internal/config/config.go.tmpl", "internal/config/config.go"},
-		{"base/internal/ports/http/server.go.tmpl", "internal/ports/http/server.go"},
-		{"base/internal/ports/http/health.go.tmpl", "internal/ports/http/health.go"},
 		{"base/configs/config.dev.yaml.tmpl", "configs/config.dev.yaml"},
 		{"base/configs/config.prod.yaml.tmpl", "configs/config.prod.yaml"},
+
+		// HTTP/REST layer
+		{"base/internal/ports/http/server.go.tmpl", "internal/ports/http/server.go"},
+		{"base/internal/ports/http/gateway.go.tmpl", "internal/ports/http/gateway.go"},
+
+		// gRPC layer
+		{"base/internal/ports/grpc/server.go.tmpl", "internal/ports/grpc/server.go"},
+		{"base/internal/ports/grpc/health.go.tmpl", "internal/ports/grpc/health.go"},
+
+		// API/Proto definitions
+		{"base/api/buf.yaml.tmpl", "api/buf.yaml"},
+		{"base/api/buf.gen.yaml.tmpl", "api/buf.gen.yaml"},
+		{"base/api/proto/v1/common.proto.tmpl", "api/proto/v1/common.proto"},
+		{"base/api/proto/v1/health.proto.tmpl", "api/proto/v1/health.proto"},
+
+		// PostgreSQL adapter
+		{"base/internal/adapters/postgres/adapter.go.tmpl", "internal/adapters/postgres/adapter.go"},
+		{"base/internal/adapters/postgres/sqlc.yaml.tmpl", "internal/adapters/postgres/sqlc.yaml"},
+		{"base/internal/adapters/postgres/schema.sql.tmpl", "internal/adapters/postgres/schema.sql"},
+		{"base/internal/adapters/postgres/queries.sql.tmpl", "internal/adapters/postgres/queries.sql"},
+
+		// Database migrations
+		{"base/migrations/000001_initial_schema.up.sql.tmpl", "migrations/000001_initial_schema.up.sql"},
+		{"base/migrations/000001_initial_schema.down.sql.tmpl", "migrations/000001_initial_schema.down.sql"},
+
+		// Helper scripts
+		{"base/scripts/generate-proto.sh.tmpl", "scripts/generate-proto.sh"},
+		{"base/scripts/migrate.sh.tmpl", "scripts/migrate.sh"},
 	}
 
 	for _, f := range baseFiles {
@@ -97,9 +128,10 @@ func (g *Generator) generateBaseStructure(cfg *config.Config) error {
 	emptyDirs := []string{
 		"internal/domain",
 		"internal/application",
+		"internal/gen",      // For generated proto code
+		"api/openapi",       // For generated OpenAPI specs
 		"pkg/logger",
 		"pkg/validator",
-		"migrations",
 		"tests/integration",
 		"tests/e2e",
 	}
@@ -112,6 +144,19 @@ func (g *Generator) generateBaseStructure(cfg *config.Config) error {
 		gitkeepPath := filepath.Join(dirPath, ".gitkeep")
 		if err := g.fileWriter.WriteFile(gitkeepPath, []byte("")); err != nil {
 			return fmt.Errorf("failed to create .gitkeep in %s: %w", dirPath, err)
+		}
+	}
+
+	// Make scripts executable
+	scriptsToChmod := []string{
+		"scripts/generate-proto.sh",
+		"scripts/migrate.sh",
+	}
+
+	for _, script := range scriptsToChmod {
+		scriptPath := filepath.Join(cfg.OutputDir, script)
+		if err := os.Chmod(scriptPath, 0755); err != nil {
+			return fmt.Errorf("failed to make %s executable: %w", script, err)
 		}
 	}
 

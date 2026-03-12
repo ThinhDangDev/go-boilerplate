@@ -1,0 +1,44 @@
+package grpc
+
+import (
+	"context"
+	"time"
+
+	apiv1 "{{.ModuleName}}/internal/gen/api/v1"
+)
+
+// HealthServiceServer implements the gRPC HealthService
+type HealthServiceServer struct {
+	apiv1.UnimplementedHealthServiceServer
+	startTime time.Time
+}
+
+// NewHealthServiceServer creates a new health service server
+func NewHealthServiceServer() *HealthServiceServer {
+	return &HealthServiceServer{
+		startTime: time.Now(),
+	}
+}
+
+// Check returns the current health status
+func (s *HealthServiceServer) Check(ctx context.Context, req *apiv1.HealthCheckRequest) (*apiv1.HealthCheckResponse, error) {
+	return &apiv1.HealthCheckResponse{
+		Status:        apiv1.HealthCheckResponse_HEALTHY,
+		Version:       "1.0.0", // TODO: inject version from build
+		UptimeSeconds: int64(time.Since(s.startTime).Seconds()),
+	}, nil
+}
+
+// Ready checks if the service is ready to handle requests
+func (s *HealthServiceServer) Ready(ctx context.Context, req *apiv1.ReadyRequest) (*apiv1.ReadyResponse, error) {
+	checks := make(map[string]string)
+
+	// TODO: Add real database connectivity check
+	checks["database"] = "ok"
+	checks["service"] = "ready"
+
+	return &apiv1.ReadyResponse{
+		Ready:  true,
+		Checks: checks,
+	}, nil
+}

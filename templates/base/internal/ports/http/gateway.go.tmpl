@@ -1,0 +1,66 @@
+package http
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
+
+	apiv1 "{{.ModuleName}}/internal/gen/api/v1"
+	"{{.ModuleName}}/internal/config"
+)
+
+// GatewayServer wraps the grpc-gateway runtime mux
+type GatewayServer struct {
+	config *config.Config
+	mux    *runtime.ServeMux
+}
+
+// NewGatewayServer creates a new gRPC-Gateway server
+func NewGatewayServer(cfg *config.Config) *GatewayServer {
+	// Custom JSON marshaler options for better REST API experience
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				UseProtoNames:   true,  // Use snake_case field names
+				EmitUnpopulated: false, // Omit zero values
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true, // Ignore unknown fields in requests
+			},
+		}),
+	)
+
+	return &GatewayServer{
+		config: cfg,
+		mux:    mux,
+	}
+}
+
+// RegisterHandlers registers all gRPC service handlers with the gateway
+func (s *GatewayServer) RegisterHandlers(ctx context.Context, grpcPort int) error {
+	grpcEndpoint := fmt.Sprintf("localhost:%d", grpcPort)
+
+	// SECURITY WARNING: insecure.NewCredentials() is ONLY safe for localhost development.
+	// For production deployments, use TLS:
+	//   grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{...}))
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
+
+	// Register HealthService
+	if err := apiv1.RegisterHealthServiceHandlerFromEndpoint(ctx, s.mux, grpcEndpoint, opts); err != nil {
+		return fmt.Errorf("failed to register health service: %w", err)
+	}
+
+	return nil
+}
+
+// Handler returns the HTTP handler for the gateway
+func (s *GatewayServer) Handler() http.Handler {
+	return s.mux
+}

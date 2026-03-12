@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package api.v1;
+
+option go_package = "{{.ModuleName}}/internal/gen/api/v1;apiv1";
+
+import "google/protobuf/timestamp.proto";
+
+// Common error response
+message Error {
+  string code = 1;
+  string message = 2;
+  map<string, string> details = 3;
+}
+
+// Pagination request parameters
+message PaginationRequest {
+  int32 page = 1;      // Page number (1-indexed)
+  int32 page_size = 2; // Items per page (max 100)
+}
+
+// Pagination response metadata
+message PaginationResponse {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total_pages = 3;
+  int64 total_items = 4;
+}

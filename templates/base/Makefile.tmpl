@@ -1,4 +1,4 @@
-.PHONY: help run build test lint clean
+.PHONY: help run build test lint clean proto sqlc migrate-up migrate-down
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -19,9 +19,37 @@ lint: ## Run linters
 	golangci-lint run
 
 clean: ## Clean build artifacts
-	rm -rf bin/ dist/ coverage.out
+	rm -rf bin/ dist/ coverage.out internal/gen/
+
+proto: ## Generate code from proto files
+	@chmod +x scripts/generate-proto.sh
+	@./scripts/generate-proto.sh
+
+sqlc: ## Generate Go code from SQL
+	@if command -v sqlc >/dev/null 2>&1; then \
+		cd internal/adapters/postgres && sqlc generate; \
+		echo "✓ sqlc code generation complete"; \
+	else \
+		echo "Error: sqlc is not installed. Install from https://sqlc.dev"; \
+		exit 1; \
+	fi
+
+migrate-up: ## Run database migrations up
+	@chmod +x scripts/migrate.sh
+	@./scripts/migrate.sh up
+
+migrate-down: ## Rollback last database migration
+	@chmod +x scripts/migrate.sh
+	@./scripts/migrate.sh down
+
+migrate-version: ## Show current migration version
+	@chmod +x scripts/migrate.sh
+	@./scripts/migrate.sh version
 
 {{- if .Features.Docker}}
+
+docker-build: ## Build Docker image
+	docker build -t {{.ProjectName}}:latest .
 
 docker-up: ## Start Docker services
 	docker-compose up -d

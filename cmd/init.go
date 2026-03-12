@@ -76,18 +76,20 @@ func runInit(cmd *cobra.Command, args []string) error {
 	fmt.Printf("\n✓ Project '%s' generated successfully!\n\n", cfg.ProjectName)
 	fmt.Println("Next steps:")
 	fmt.Printf("  cd %s\n", cfg.OutputDir)
-	fmt.Println("  go mod download")
+	fmt.Println("  make proto              # Generate code from proto files")
+	fmt.Println("  go mod download         # Download dependencies")
 	if cfg.Features.Docker {
-		fmt.Println("  docker-compose up -d")
+		fmt.Println("  docker-compose up -d    # Start PostgreSQL and other services")
 	}
-	fmt.Println("  make run")
+	fmt.Println("  make migrate-up         # Run database migrations")
+	fmt.Println("  make run                # Start the server")
 	fmt.Println("\nServer will start on:")
 	fmt.Println("  REST: http://localhost:8080/api/v1/")
 	fmt.Println("  gRPC: localhost:9090")
 	if cfg.Features.Observability {
 		fmt.Println("  Metrics: http://localhost:8080/metrics")
 	}
-	fmt.Println("  Health: http://localhost:8080/health")
+	fmt.Println("  Health: http://localhost:8080/api/v1/health")
 	fmt.Println()
 
 	return nil

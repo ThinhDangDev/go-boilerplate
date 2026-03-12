@@ -4,14 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"{{.ModuleName}}/internal/config"
+	grpcserver "{{.ModuleName}}/internal/ports/grpc"
 	httpserver "{{.ModuleName}}/internal/ports/http"
+)
+
+const (
+	httpPort = 8080
+	grpcPort = 9090
 )
 
 func main() {
@@ -21,31 +27,68 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Initialize HTTP server
-	srv := httpserver.NewServer(cfg)
+	// Create a channel to signal when gRPC server is ready
+	grpcReady := make(chan struct{})
 
-	// Start HTTP server
+	// Initialize gRPC server
+	grpcSrv := grpcserver.NewServer(cfg)
+
+	// Start gRPC server in background
 	go func() {
-		addr := fmt.Sprintf(":%d", cfg.Server.Port)
-		log.Printf("Starting HTTP server on %s", addr)
-		if err := srv.Start(addr); err != nil && err != http.ErrServerClosed {
+		// Verify port is available before signaling ready
+		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+		if err != nil {
+			log.Fatalf("Failed to listen on gRPC port: %v", err)
+		}
+
+		// Signal that gRPC server is ready to accept connections
+		close(grpcReady)
+
+		log.Printf("Starting gRPC server on port %d", grpcPort)
+		if err := grpcSrv.grpcServer.Serve(listener); err != nil {
+			log.Fatalf("gRPC server failed: %v", err)
+		}
+	}()
+
+	// Wait for gRPC server to be ready
+	<-grpcReady
+
+	// Initialize HTTP server with gRPC-Gateway
+	httpSrv := httpserver.NewServer(cfg, grpcPort)
+
+	// Start HTTP server in background
+	go func() {
+		log.Printf("Starting HTTP server on port %d", httpPort)
+		if err := httpSrv.Start(); err != nil {
 			log.Fatalf("HTTP server failed: %v", err)
 		}
 	}()
+
+	log.Println("Server started successfully!")
+	log.Printf("  - REST API: http://localhost:%d/api/v1/", httpPort)
+	log.Printf("  - gRPC API: localhost:%d", grpcPort)
+	log.Printf("  - Health: http://localhost:%d/api/v1/health", httpPort)
+	{{- if .Features.Observability}}
+	log.Printf("  - Metrics: http://localhost:%d/metrics", httpPort)
+	{{- end}}
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	log.Println("Shutting down server...")
+	log.Println("Shutting down servers...")
 
+	// Stop gRPC server
+	grpcSrv.Stop()
+
+	// Stop HTTP server
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+	if err := httpSrv.Shutdown(ctx); err != nil {
+		log.Printf("HTTP server shutdown error: %v", err)
 	}
 
-	log.Println("Server exited")
+	log.Println("Servers stopped")
 }

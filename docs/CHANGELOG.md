@@ -5,6 +5,34 @@ All notable changes to the Go Backend Boilerplate Generator will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - Phase 2 Complete
+
+### Added
+- buf configuration for proto linting and generation
+- Proto file templates with API versioning (v1)
+- gRPC server with reflection and graceful shutdown
+- grpc-gateway for automatic REST API generation
+- PostgreSQL adapter with pgx driver and connection pooling
+- sqlc configuration for type-safe SQL queries
+- Database migration system (golang-migrate)
+- Helper scripts (generate-proto.sh, migrate.sh)
+- Dual-server architecture (HTTP + gRPC)
+
+### Changed
+- Updated main.go to start both HTTP and gRPC servers
+- Enhanced Makefile with proto, sqlc, migrate tasks
+- Updated README with dual-API documentation
+
+### Security
+- Added security warning for insecure gRPC credentials
+- Channel-based server synchronization (replaced time.Sleep)
+
+### Technical Details
+- 25 new template files added to the boilerplate
+- 30 tests achieving 100% pass rate
+- Support for REST and gRPC simultaneously
+- OpenAPI spec auto-generation from proto files
+
 ## [Unreleased] - Phase 1 Complete
 
 ### Added
