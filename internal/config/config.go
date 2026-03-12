@@ -1,10 +1,19 @@
 package config
 
+// ConfigFormat represents the configuration file format
+type ConfigFormat string
+
+const (
+	ConfigFormatEnv  ConfigFormat = "env"
+	ConfigFormatYAML ConfigFormat = "yaml"
+)
+
 // Config represents the generator configuration gathered from user prompts
 type Config struct {
 	ProjectName     string
 	ModuleName      string
 	OutputDir       string
+	ConfigFormat    ConfigFormat
 	Features        Features
 	InitGit         bool
 	GenerateExample bool

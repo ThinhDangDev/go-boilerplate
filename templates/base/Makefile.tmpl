@@ -1,4 +1,4 @@
-.PHONY: help run build test lint clean proto sqlc migrate-up migrate-down
+.PHONY: help run build test lint clean proto sqlc swagger migrate-up migrate-down
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -33,6 +33,19 @@ sqlc: ## Generate Go code from SQL
 		echo "Error: sqlc is not installed. Install from https://sqlc.dev"; \
 		exit 1; \
 	fi
+
+swagger: ## Generate Swagger documentation
+	@if command -v swag >/dev/null 2>&1; then \
+		swag init -g cmd/server/main.go -o api/docs; \
+		echo "✓ Swagger documentation generated at api/docs"; \
+	else \
+		echo "Error: swag is not installed. Install with: go install github.com/swaggo/swag/cmd/swag@latest"; \
+		exit 1; \
+	fi
+
+swagger-serve: ## Serve Swagger UI locally
+	@echo "Opening Swagger UI at http://localhost:8080/swagger/index.html"
+	@echo "Make sure the server is running with 'make run'"
 
 migrate-up: ## Run database migrations up
 	@chmod +x scripts/migrate.sh

@@ -5,42 +5,97 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
+// InitTracing initializes OpenTelemetry tracing with OTLP gRPC exporter
+// If endpoint is empty, tracing will use a no-op provider (safe for local development)
 func InitTracing(serviceName, endpoint string) (*sdktrace.TracerProvider, error) {
 	ctx := context.Background()
+
+	// If no endpoint provided, use no-op provider
+	if endpoint == "" {
+		return sdktrace.NewTracerProvider(), nil
+	}
 
 	// Create OTLP exporter
 	exporter, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(endpoint),
-		otlptracegrpc.WithInsecure(), // Use TLS in production
+		otlptracegrpc.WithInsecure(), // Use WithTLSCredentials in production
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create exporter: %w", err)
 	}
 
-	// Create resource
+	// Create resource with service information
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(serviceName),
+			semconv.ServiceVersionKey.String("1.0.0"),
 		),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// Create tracer provider
+	// Create tracer provider with batch span processor
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()), // Use ParentBased in production
 	)
 
 	otel.SetTracerProvider(tp)
 
 	return tp, nil
 }
+
+// Example tracing helper functions
+
+// StartSpan starts a new span with the given name and attributes
+func StartSpan(ctx context.Context, tracerName, spanName string, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
+	tracer := otel.Tracer(tracerName)
+	return tracer.Start(ctx, spanName, trace.WithAttributes(attrs...))
+}
+
+// RecordError records an error on a span and sets the span status
+func RecordError(span trace.Span, err error) {
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
+}
+
+// AddSpanAttributes adds attributes to a span
+func AddSpanAttributes(span trace.Span, attrs ...attribute.KeyValue) {
+	span.SetAttributes(attrs...)
+}
+
+// Example usage patterns:
+//
+// 1. Simple span:
+//   ctx, span := StartSpan(ctx, "{{.ProjectName}}", "operation.name")
+//   defer span.End()
+//
+// 2. Span with attributes:
+//   ctx, span := StartSpan(ctx, "{{.ProjectName}}", "database.query",
+//       attribute.String("db.statement", query),
+//       attribute.String("db.operation", "select"),
+//   )
+//   defer span.End()
+//
+// 3. Recording errors:
+//   if err != nil {
+//       RecordError(span, err)
+//       return err
+//   }
+//
+// 4. Adding attributes during execution:
+//   AddSpanAttributes(span,
+//       attribute.Int("rows.returned", rowCount),
+//       attribute.Int64("duration.ms", duration.Milliseconds()),
+//   )

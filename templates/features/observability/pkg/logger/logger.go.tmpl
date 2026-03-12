@@ -1,14 +1,19 @@
 package logger
 
 import (
+	"context"
 	"log/slog"
 	"os"
+	"time"
 )
 
 type Logger struct {
 	*slog.Logger
 }
 
+// New creates a new structured logger with the specified level and format
+// Level options: debug, info, warn, error
+// Format options: json, text
 func New(level string, format string) *Logger {
 	var logLevel slog.Level
 	switch level {
@@ -27,6 +32,7 @@ func New(level string, format string) *Logger {
 	var handler slog.Handler
 	opts := &slog.HandlerOptions{
 		Level: logLevel,
+		AddSource: true, // Include source file and line number
 	}
 
 	if format == "json" {
@@ -40,6 +46,7 @@ func New(level string, format string) *Logger {
 	}
 }
 
+// WithRequest adds request context to logger
 func (l *Logger) WithRequest(requestID string, method string, path string) *Logger {
 	return &Logger{
 		Logger: l.Logger.With(
@@ -48,4 +55,86 @@ func (l *Logger) WithRequest(requestID string, method string, path string) *Logg
 			"path", path,
 		),
 	}
+}
+
+// WithUser adds user context to logger
+func (l *Logger) WithUser(userID string) *Logger {
+	return &Logger{
+		Logger: l.Logger.With("user_id", userID),
+	}
+}
+
+// WithError adds error context to logger
+func (l *Logger) WithError(err error) *Logger {
+	return &Logger{
+		Logger: l.Logger.With("error", err.Error()),
+	}
+}
+
+// WithFields adds custom fields to logger
+func (l *Logger) WithFields(fields map[string]interface{}) *Logger {
+	args := make([]interface{}, 0, len(fields)*2)
+	for k, v := range fields {
+		args = append(args, k, v)
+	}
+	return &Logger{
+		Logger: l.Logger.With(args...),
+	}
+}
+
+// Example usage functions demonstrating best practices
+
+// LogHTTPRequest logs an HTTP request with all relevant details
+func (l *Logger) LogHTTPRequest(ctx context.Context, method, path string, statusCode int, duration time.Duration) {
+	l.Logger.InfoContext(ctx, "HTTP request completed",
+		"method", method,
+		"path", path,
+		"status", statusCode,
+		"duration_ms", duration.Milliseconds(),
+	)
+}
+
+// LogDBQuery logs a database query with timing
+func (l *Logger) LogDBQuery(ctx context.Context, query string, duration time.Duration, err error) {
+	if err != nil {
+		l.Logger.ErrorContext(ctx, "Database query failed",
+			"query", query,
+			"duration_ms", duration.Milliseconds(),
+			"error", err.Error(),
+		)
+	} else {
+		l.Logger.DebugContext(ctx, "Database query executed",
+			"query", query,
+			"duration_ms", duration.Milliseconds(),
+		)
+	}
+}
+
+// LogUserAction logs a user action for audit trail
+func (l *Logger) LogUserAction(ctx context.Context, userID, action, resource string) {
+	l.Logger.InfoContext(ctx, "User action",
+		"user_id", userID,
+		"action", action,
+		"resource", resource,
+		"timestamp", time.Now().Unix(),
+	)
+}
+
+// LogServiceStartup logs service startup information
+func (l *Logger) LogServiceStartup(serviceName, version string, port int) {
+	l.Logger.Info("Service starting",
+		"service", serviceName,
+		"version", version,
+		"port", port,
+		"timestamp", time.Now().Format(time.RFC3339),
+	)
+}
+
+// LogServiceShutdown logs service shutdown
+func (l *Logger) LogServiceShutdown(serviceName string, reason string) {
+	l.Logger.Warn("Service shutting down",
+		"service", serviceName,
+		"reason", reason,
+		"timestamp", time.Now().Format(time.RFC3339),
+	)
 }

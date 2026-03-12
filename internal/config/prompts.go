@@ -47,6 +47,23 @@ func PromptForConfig() (*Config, error) {
 		return nil, fmt.Errorf("output directory prompt failed: %w", err)
 	}
 
+	// Config Format Selection
+	var configFormat string
+	configFormatPrompt := &survey.Select{
+		Message: "Configuration format:",
+		Options: []string{".env", "YAML"},
+		Default: ".env",
+		Help:    "Choose how to configure your application (environment variables vs YAML files)",
+	}
+	if err := survey.AskOne(configFormatPrompt, &configFormat); err != nil {
+		return nil, fmt.Errorf("config format prompt failed: %w", err)
+	}
+	if configFormat == ".env" {
+		cfg.ConfigFormat = ConfigFormatEnv
+	} else {
+		cfg.ConfigFormat = ConfigFormatYAML
+	}
+
 	// Feature: Authentication
 	authPrompt := &survey.Confirm{
 		Message: "Enable Authentication? (JWT + OAuth2 + Redis)",

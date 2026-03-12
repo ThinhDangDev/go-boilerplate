@@ -1,6 +1,9 @@
 package telemetry
 
 import (
+	"context"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -59,4 +62,101 @@ var (
 		},
 		[]string{"query"},
 	)
+{{- if .Features.Auth}}
+
+	// Authentication metrics
+	AuthAttemptsTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "auth_attempts_total",
+			Help: "Total number of authentication attempts",
+		},
+		[]string{"method", "status"}, // method: login/register/oauth, status: success/failure
+	)
+
+	ActiveSessionsGauge = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "auth_active_sessions",
+			Help: "Current number of active user sessions",
+		},
+	)
+{{- end}}
+
+	// Application metrics
+	AppStartTime = promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "app_start_time_seconds",
+			Help: "Unix timestamp when the application started",
+		},
+	)
+
+	AppVersion = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "app_version",
+			Help: "Application version info",
+		},
+		[]string{"version"},
+	)
 )
+
+// Example usage functions demonstrating best practices
+
+// RecordHTTPRequest records an HTTP request with timing
+func RecordHTTPRequest(method, path string, statusCode int, duration time.Duration) {
+	HTTPRequestsTotal.WithLabelValues(method, path, string(rune(statusCode))).Inc()
+	HTTPRequestDuration.WithLabelValues(method, path).Observe(duration.Seconds())
+}
+
+// RecordGRPCRequest records a gRPC request with timing
+func RecordGRPCRequest(method, status string, duration time.Duration) {
+	GRPCRequestsTotal.WithLabelValues(method, status).Inc()
+	GRPCRequestDuration.WithLabelValues(method).Observe(duration.Seconds())
+}
+
+// RecordDBQuery records a database query with timing
+func RecordDBQuery(ctx context.Context, queryName string, duration time.Duration, err error) {
+	status := "success"
+	if err != nil {
+		status = "error"
+	}
+	DBQueriesTotal.WithLabelValues(queryName, status).Inc()
+	DBQueryDuration.WithLabelValues(queryName).Observe(duration.Seconds())
+}
+{{- if .Features.Auth}}
+
+// RecordAuthAttempt records an authentication attempt
+func RecordAuthAttempt(method, status string) {
+	AuthAttemptsTotal.WithLabelValues(method, status).Inc()
+}
+
+// SetActiveSessions updates the active sessions gauge
+func SetActiveSessions(count float64) {
+	ActiveSessionsGauge.Set(count)
+}
+{{- end}}
+
+// InitAppMetrics initializes application-level metrics
+func InitAppMetrics(version string) {
+	AppStartTime.SetToCurrentTime()
+	AppVersion.WithLabelValues(version).Set(1)
+}
+
+// Example: Usage in HTTP handler
+//
+//   func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
+//       start := time.Now()
+//       defer func() {
+//           duration := time.Since(start)
+//           telemetry.RecordHTTPRequest(r.Method, r.URL.Path, http.StatusOK, duration)
+//       }()
+//       // ... handler logic
+//   }
+
+// Example: Usage in database layer
+//
+//   func (r *Repository) GetUserByID(ctx context.Context, id string) (*User, error) {
+//       start := time.Now()
+//       user, err := r.db.QueryRow(ctx, "SELECT * FROM users WHERE id = $1", id)
+//       duration := time.Since(start)
+//       telemetry.RecordDBQuery(ctx, "get_user_by_id", duration, err)
+//       return user, err
+//   }

@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	name     string
-	module   string
-	features []string
+	name         string
+	module       string
+	features     []string
+	configFormat string
 )
 
 var initCmd = &cobra.Command{
@@ -27,6 +28,7 @@ func init() {
 	initCmd.Flags().StringVar(&name, "name", "", "Project name")
 	initCmd.Flags().StringVar(&module, "module", "", "Go module name")
 	initCmd.Flags().StringSliceVar(&features, "features", []string{}, "Features to include (auth,observability,docker)")
+	initCmd.Flags().StringVar(&configFormat, "config", "env", "Configuration format (env or yaml)")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -36,10 +38,19 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Non-interactive mode if flags are provided
 	if name != "" && module != "" {
 		cfg = &config.Config{
-			ProjectName: name,
-			ModuleName:  module,
-			OutputDir:   fmt.Sprintf("./%s", name),
-			InitGit:     true,
+			ProjectName:  name,
+			ModuleName:   module,
+			OutputDir:    fmt.Sprintf("./%s", name),
+			ConfigFormat: config.ConfigFormatEnv, // Default
+			InitGit:      true,
+		}
+
+		// Parse config format
+		switch strings.TrimSpace(strings.ToLower(configFormat)) {
+		case "env", ".env":
+			cfg.ConfigFormat = config.ConfigFormatEnv
+		case "yaml", "yml":
+			cfg.ConfigFormat = config.ConfigFormatYAML
 		}
 
 		// Parse features
