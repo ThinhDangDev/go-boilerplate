@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package api.v1;
+
+import "google/api/annotations.proto";
+import "api/proto/v1/common.proto";
+
+option go_package = "{{.ModuleName}}/internal/gen/api/v1;apiv1";
+
+service AuthService {
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/register"
+      body: "*"
+    };
+  }
+
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/login"
+      body: "*"
+    };
+  }
+
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/auth/refresh"
+      body: "*"
+    };
+  }
+
+  rpc GetProfile(GetProfileRequest) returns (GetProfileResponse) {
+    option (google.api.http) = {
+      get: "/api/v1/auth/profile"
+    };
+  }
+}
+
+message RegisterRequest {
+  string email = 1;
+  string password = 2;
+  string full_name = 3;
+}
+
+message RegisterResponse {
+  User user = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  User user = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+
+message GetProfileRequest {}
+
+message GetProfileResponse {
+  User user = 1;
+}
+
+message User {
+  string id = 1;
+  string email = 2;
+  string full_name = 3;
+  string role = 4;
+  string provider = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}

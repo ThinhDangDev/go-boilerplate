@@ -45,6 +45,19 @@ func main() {
 					t.Fatal(err)
 				}
 
+				// Create proto files (required by Phase 2 validator)
+				protoDir := filepath.Join(tmpDir, "api", "proto", "v1")
+				if err := os.MkdirAll(protoDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				protoContent := `syntax = "proto3";
+package api.v1;
+service HealthService {}
+`
+				if err := os.WriteFile(filepath.Join(protoDir, "health.proto"), []byte(protoContent), 0644); err != nil {
+					t.Fatal(err)
+				}
+
 				return tmpDir
 			},
 			wantErr: false,
@@ -121,10 +134,23 @@ func main() {
 					t.Fatal(err)
 				}
 
+				// Create proto files (required by Phase 2 validator)
+				protoDir := filepath.Join(tmpDir, "api", "proto", "v1")
+				if err := os.MkdirAll(protoDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				protoContent := `syntax = "proto3";
+package api.v1;
+service HealthService {}
+`
+				if err := os.WriteFile(filepath.Join(protoDir, "health.proto"), []byte(protoContent), 0644); err != nil {
+					t.Fatal(err)
+				}
+
 				return tmpDir
 			},
-			wantErr: true,
-			errMsg:  "go vet failed",
+			wantErr: false, // Changed from true - validator no longer runs go vet
+			errMsg:  "",    // No error expected anymore
 		},
 	}
 

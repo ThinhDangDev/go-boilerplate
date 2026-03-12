@@ -1,0 +1,60 @@
+package telemetry
+
+import (
+	"net/http"
+	"strconv"
+	"time"
+
+	"google.golang.org/grpc"
+)
+
+// HTTPMetricsMiddleware wraps HTTP handlers to collect metrics
+func HTTPMetricsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Create response writer wrapper to capture status code
+		wrapper := &responseWriterWrapper{
+			ResponseWriter: w,
+			statusCode:     http.StatusOK,
+		}
+
+		next.ServeHTTP(wrapper, r)
+
+		duration := time.Since(start).Seconds()
+		status := strconv.Itoa(wrapper.statusCode)
+
+		HTTPRequestsTotal.WithLabelValues(r.Method, r.URL.Path, status).Inc()
+		HTTPRequestDuration.WithLabelValues(r.Method, r.URL.Path).Observe(duration)
+	})
+}
+
+type responseWriterWrapper struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (w *responseWriterWrapper) WriteHeader(statusCode int) {
+	w.statusCode = statusCode
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+// GRPCMetricsInterceptor collects gRPC metrics
+func GRPCMetricsInterceptor() grpc.UnaryServerInterceptor {
+	return func(ctx any, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		start := time.Now()
+
+		resp, err := handler(ctx, req)
+
+		duration := time.Since(start).Seconds()
+		status := "ok"
+		if err != nil {
+			status = "error"
+		}
+
+		GRPCRequestsTotal.WithLabelValues(info.FullMethod, status).Inc()
+		GRPCRequestDuration.WithLabelValues(info.FullMethod).Observe(duration)
+
+		return resp, err
+	}
+}

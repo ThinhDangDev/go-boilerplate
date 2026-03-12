@@ -1,0 +1,51 @@
+package logger
+
+import (
+	"log/slog"
+	"os"
+)
+
+type Logger struct {
+	*slog.Logger
+}
+
+func New(level string, format string) *Logger {
+	var logLevel slog.Level
+	switch level {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "info":
+		logLevel = slog.LevelInfo
+	case "warn":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
+	}
+
+	var handler slog.Handler
+	opts := &slog.HandlerOptions{
+		Level: logLevel,
+	}
+
+	if format == "json" {
+		handler = slog.NewJSONHandler(os.Stdout, opts)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, opts)
+	}
+
+	return &Logger{
+		Logger: slog.New(handler),
+	}
+}
+
+func (l *Logger) WithRequest(requestID string, method string, path string) *Logger {
+	return &Logger{
+		Logger: l.Logger.With(
+			"request_id", requestID,
+			"method", method,
+			"path", path,
+		),
+	}
+}

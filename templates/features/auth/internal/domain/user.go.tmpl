@@ -1,0 +1,42 @@
+package domain
+
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
+type User struct {
+	ID           uuid.UUID
+	Email        string
+	PasswordHash string
+	FullName     string
+	Role         Role
+	Provider     AuthProvider
+	ProviderID   string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type Role string
+
+const (
+	RoleUser  Role = "user"
+	RoleAdmin Role = "admin"
+)
+
+type AuthProvider string
+
+const (
+	ProviderLocal  AuthProvider = "local"
+	ProviderGoogle AuthProvider = "google"
+	ProviderGitHub AuthProvider = "github"
+)
+
+func (u *User) HasRole(role Role) bool {
+	return u.Role == role
+}
+
+func (u *User) IsAdmin() bool {
+	return u.Role == RoleAdmin
+}

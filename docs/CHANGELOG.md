@@ -5,7 +5,55 @@ All notable changes to the Go Backend Boilerplate Generator will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - Phase 2 Complete
+## [Unreleased]
+
+## [Phase 3] - 2026-03-12
+
+### Added - Feature Toggles
+- **Authentication Feature (12 templates)**
+  - User domain model with roles (user, admin) and providers (local, Google, GitHub)
+  - JWT token manager with access/refresh token generation
+  - HTTP auth middleware with Bearer token validation and RBAC
+  - gRPC auth interceptor with public method whitelist
+  - Redis session store for distributed sessions
+  - OAuth2 providers (Google, GitHub) with token exchange
+  - Auth service with bcrypt password hashing and login/register
+  - Auth HTTP handler for REST endpoints
+  - Auth proto definitions with gRPC-gateway annotations
+  - Database migrations for users and refresh_tokens tables
+
+- **Observability Feature (6 templates)**
+  - Prometheus metrics (HTTP, gRPC, DB counters and histograms)
+  - OpenTelemetry tracing with OTLP exporter
+  - HTTP and gRPC metrics middleware
+  - Structured logging with slog (JSON/text formats)
+  - Prometheus scrape configuration template
+  - OTEL collector pipeline configuration template
+
+- **Docker Feature (3 templates)**
+  - Multi-stage Dockerfile with non-root user
+  - Docker Compose with conditional services (Redis, Prometheus, Grafana, OTEL)
+  - .dockerignore for optimal build context
+
+### Changed
+- Updated `internal/generator/generator.go` to support conditional feature rendering
+- Enhanced `templates/base/go.mod.tmpl` with feature-specific dependencies
+- Improved `internal/templates/engine.go` with multi-path template discovery for tests
+
+### Tests
+- Added 4 comprehensive test suites for feature combinations
+- `TestAllFeatureCombinations` - validates all 8 permutations (2^3)
+- `TestFeatureIndependence` - ensures features work independently
+- `TestGoModDependencies` - verifies conditional dependencies
+- `TestAuthMigrationOrdering` - checks migration file numbering
+- Total: 45 tests passing (100% pass rate)
+
+### Fixed
+- Template engine now finds templates from test directories (../../templates)
+- Validator tests updated to reflect Phase 2 validation logic
+- Added missing Prometheus and OTEL collector config files
+
+## [Phase 2] - Phase 2 Complete
 
 ### Added
 - buf configuration for proto linting and generation

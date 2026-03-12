@@ -170,8 +170,33 @@ func (g *Generator) generateFeatures(cfg *config.Config) error {
 			template string
 			output   string
 		}{
-			{"features/auth/jwt.go.tmpl", "pkg/auth/jwt.go"},
-			{"features/auth/middleware.go.tmpl", "internal/ports/http/middleware/auth.go"},
+			// Domain
+			{"features/auth/internal/domain/user.go.tmpl", "internal/domain/user.go"},
+
+			// Application
+			{"features/auth/internal/application/auth_service.go.tmpl", "internal/application/auth_service.go"},
+
+			// Ports - HTTP
+			{"features/auth/internal/ports/http/auth_middleware.go.tmpl", "internal/ports/http/auth_middleware.go"},
+			{"features/auth/internal/ports/http/auth_handler.go.tmpl", "internal/ports/http/auth_handler.go"},
+
+			// Ports - gRPC
+			{"features/auth/internal/ports/grpc/auth_interceptor.go.tmpl", "internal/ports/grpc/auth_interceptor.go"},
+
+			// Adapters
+			{"features/auth/internal/adapters/redis/session_store.go.tmpl", "internal/adapters/redis/session_store.go"},
+			{"features/auth/internal/adapters/oauth/google.go.tmpl", "internal/adapters/oauth/google.go"},
+			{"features/auth/internal/adapters/oauth/github.go.tmpl", "internal/adapters/oauth/github.go"},
+
+			// Packages
+			{"features/auth/pkg/jwt/jwt.go.tmpl", "pkg/jwt/jwt.go"},
+
+			// API
+			{"features/auth/api/proto/v1/auth.proto.tmpl", "api/proto/v1/auth.proto"},
+
+			// Migrations
+			{"features/auth/migrations/000002_create_users.up.sql.tmpl", "migrations/000002_create_users.up.sql"},
+			{"features/auth/migrations/000002_create_users.down.sql.tmpl", "migrations/000002_create_users.down.sql"},
 		}
 		if err := g.generateTemplateFiles(cfg, authFiles, "auth"); err != nil {
 			return err
@@ -184,8 +209,12 @@ func (g *Generator) generateFeatures(cfg *config.Config) error {
 			template string
 			output   string
 		}{
-			{"features/observability/telemetry.go.tmpl", "pkg/telemetry/telemetry.go"},
-			{"features/observability/logger.go.tmpl", "pkg/logger/logger.go"},
+			{"features/observability/internal/telemetry/metrics.go.tmpl", "internal/telemetry/metrics.go"},
+			{"features/observability/internal/telemetry/tracing.go.tmpl", "internal/telemetry/tracing.go"},
+			{"features/observability/internal/telemetry/logging.go.tmpl", "internal/telemetry/logging.go"},
+			{"features/observability/pkg/logger/logger.go.tmpl", "pkg/logger/logger.go"},
+			{"features/observability/configs/prometheus.yml.tmpl", "configs/prometheus.yml"},
+			{"features/observability/configs/otel-collector-config.yaml.tmpl", "configs/otel-collector-config.yaml"},
 		}
 		if err := g.generateTemplateFiles(cfg, obsFiles, "observability"); err != nil {
 			return err

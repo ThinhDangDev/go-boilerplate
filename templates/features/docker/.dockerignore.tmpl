@@ -1,30 +1,44 @@
 # Binaries
-bin/
-dist/
-
-# Dependencies
-vendor/
-
-# IDE
-.idea/
-.vscode/
-
-# OS
-.DS_Store
-
-# Environment
-.env
-.env.local
-
-# Build artifacts
+/bin/
 *.exe
 *.dll
 *.so
 *.dylib
 
-# Test
+# Test binaries
 *.test
+
+# Output of go coverage tool
 *.out
 
-# Temporary files
-/tmp/
+# Dependency directories
+/vendor/
+
+# Go workspace file
+go.work
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Generated files
+/internal/gen/

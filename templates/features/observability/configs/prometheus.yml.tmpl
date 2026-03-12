@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Scrape metrics from the application
+  - job_name: '{{.ProjectName}}'
+    static_configs:
+      - targets: ['app:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Scrape Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  {{- if .Features.Auth}}
+  # Scrape Redis metrics (if redis_exporter is added)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+  {{- end}}
+
+  # Scrape PostgreSQL metrics (if postgres_exporter is added)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 30s

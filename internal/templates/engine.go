@@ -19,23 +19,51 @@ type Engine struct {
 
 // NewEngine creates a new template engine
 func NewEngine() *Engine {
-	// Get the executable directory
-	execPath, err := os.Executable()
-	if err != nil {
-		// Fallback to current directory
-		execPath = "."
+	// Try multiple paths to find the templates directory
+	possiblePaths := []string{
+		"templates",                    // From project root
+		"../../templates",              // From internal/generator (tests)
+		"../../../templates",           // From internal/generator/subdir
+		filepath.Join(".", "templates"), // Current directory
 	}
-	baseDir := filepath.Dir(execPath)
-	templatesDir := filepath.Join(baseDir, "templates")
 
-	// Check if templates directory exists, if not use relative path
-	if _, err := os.Stat(templatesDir); os.IsNotExist(err) {
+	// Get the executable directory as fallback
+	execPath, err := os.Executable()
+	if err == nil {
+		baseDir := filepath.Dir(execPath)
+		possiblePaths = append(possiblePaths, filepath.Join(baseDir, "templates"))
+	}
+
+	// Find the first existing templates directory
+	var templatesDir string
+	for _, path := range possiblePaths {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			continue
+		}
+		if _, err := os.Stat(absPath); err == nil {
+			// Verify it contains actual templates
+			if hasTemplates(absPath) {
+				templatesDir = absPath
+				break
+			}
+		}
+	}
+
+	// If no templates directory found, use relative path as fallback
+	if templatesDir == "" {
 		templatesDir = "templates"
 	}
 
 	return &Engine{
 		templatesDir: templatesDir,
 	}
+}
+
+// hasTemplates checks if directory contains template files
+func hasTemplates(dir string) bool {
+	_, err := os.Stat(filepath.Join(dir, "base"))
+	return err == nil
 }
 
 // Render renders a template with the given data

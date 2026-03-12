@@ -1,0 +1,88 @@
+package http
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"{{.ModuleName}}/internal/application"
+	"{{.ModuleName}}/pkg/jwt"
+)
+
+type AuthHandler struct {
+	authService *application.AuthService
+	jwtManager  *jwt.Manager
+}
+
+func NewAuthHandler(authService *application.AuthService, jwtManager *jwt.Manager) *AuthHandler {
+	return &AuthHandler{
+		authService: authService,
+		jwtManager:  jwtManager,
+	}
+}
+
+type RegisterRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	FullName string `json:"full_name"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type TokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	var req RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.authService.Register(r.Context(), req.Email, req.Password, req.FullName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	accessToken, refreshToken, err := h.authService.Login(r.Context(), req.Email, req.Password)
+	if err != nil {
+		http.Error(w, "failed to generate tokens", http.StatusInternalServerError)
+		return
+	}
+
+	response := TokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	accessToken, refreshToken, err := h.authService.Login(r.Context(), req.Email, req.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	response := TokenResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

@@ -1,0 +1,54 @@
+package redis
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/redis/go-redis/v9"
+)
+
+type SessionStore struct {
+	client *redis.Client
+	ttl    time.Duration
+}
+
+func NewSessionStore(redisURL string, ttl time.Duration) (*SessionStore, error) {
+	opt, err := redis.ParseURL(redisURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Redis URL: %w", err)
+	}
+
+	client := redis.NewClient(opt)
+
+	// Verify connection
+	ctx := context.Background()
+	if err := client.Ping(ctx).Err(); err != nil {
+		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+	}
+
+	return &SessionStore{
+		client: client,
+		ttl:    ttl,
+	}, nil
+}
+
+func (s *SessionStore) Set(ctx context.Context, key string, value string) error {
+	return s.client.Set(ctx, key, value, s.ttl).Err()
+}
+
+func (s *SessionStore) Get(ctx context.Context, key string) (string, error) {
+	val, err := s.client.Get(ctx, key).Result()
+	if err == redis.Nil {
+		return "", fmt.Errorf("session not found")
+	}
+	return val, err
+}
+
+func (s *SessionStore) Delete(ctx context.Context, key string) error {
+	return s.client.Del(ctx, key).Err()
+}
+
+func (s *SessionStore) Close() error {
+	return s.client.Close()
+}

@@ -1,0 +1,94 @@
+package application
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+
+	"{{.ModuleName}}/internal/domain"
+	"{{.ModuleName}}/pkg/jwt"
+)
+
+type AuthService struct {
+	userRepo   UserRepository
+	jwtManager *jwt.Manager
+}
+
+type UserRepository interface {
+	Create(ctx context.Context, user *domain.User) error
+	GetByEmail(ctx context.Context, email string) (*domain.User, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
+	Update(ctx context.Context, user *domain.User) error
+}
+
+func NewAuthService(userRepo UserRepository, jwtManager *jwt.Manager) *AuthService {
+	return &AuthService{
+		userRepo:   userRepo,
+		jwtManager: jwtManager,
+	}
+}
+
+func (s *AuthService) Register(ctx context.Context, email, password, fullName string) (*domain.User, error) {
+	// Check if user exists
+	existing, err := s.userRepo.GetByEmail(ctx, email)
+	if err == nil && existing != nil {
+		return nil, fmt.Errorf("user already exists")
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Create user
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        email,
+		PasswordHash: string(hashedPassword),
+		FullName:     fullName,
+		Role:         domain.RoleUser,
+		Provider:     domain.ProviderLocal,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	return user, nil
+}
+
+func (s *AuthService) Login(ctx context.Context, email, password string) (string, string, error) {
+	// Get user
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return "", "", fmt.Errorf("invalid credentials")
+	}
+
+	// Verify password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		return "", "", fmt.Errorf("invalid credentials")
+	}
+
+	// Generate tokens
+	accessToken, err := s.jwtManager.GenerateAccessToken(user.ID, user.Email, string(user.Role))
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate access token: %w", err)
+	}
+
+	refreshToken, err := s.jwtManager.GenerateRefreshToken(user.ID)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to generate refresh token: %w", err)
+	}
+
+	return accessToken, refreshToken, nil
+}
+
+func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	return s.userRepo.GetByID(ctx, id)
+}

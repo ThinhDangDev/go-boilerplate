@@ -1,0 +1,62 @@
+package oauth
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
+)
+
+type GitHubProvider struct {
+	config *oauth2.Config
+}
+
+func NewGitHubProvider(clientID, clientSecret, redirectURL string) *GitHubProvider {
+	return &GitHubProvider{
+		config: &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  redirectURL,
+			Scopes:       []string{"user:email"},
+			Endpoint:     github.Endpoint,
+		},
+	}
+}
+
+func (p *GitHubProvider) GetAuthURL(state string) string {
+	return p.config.AuthCodeURL(state)
+}
+
+func (p *GitHubProvider) ExchangeCode(ctx context.Context, code string) (*oauth2.Token, error) {
+	token, err := p.config.Exchange(ctx, code)
+	if err != nil {
+		return nil, fmt.Errorf("failed to exchange code: %w", err)
+	}
+	return token, nil
+}
+
+func (p *GitHubProvider) GetUserInfo(ctx context.Context, token *oauth2.Token) (*GitHubUserInfo, error) {
+	client := p.config.Client(ctx, token)
+	resp, err := client.Get("https://api.github.com/user")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user info: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var info GitHubUserInfo
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return nil, fmt.Errorf("failed to decode user info: %w", err)
+	}
+
+	return &info, nil
+}
+
+type GitHubUserInfo struct {
+	ID        int64  `json:"id"`
+	Login     string `json:"login"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	AvatarURL string `json:"avatar_url"`
+}

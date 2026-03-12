@@ -5,7 +5,7 @@ estimated_duration: 4-5 weeks
 progress:
   phase_1: completed
   phase_2: completed
-  phase_3: pending
+  phase_3: completed
   phase_4: pending
 ---
 
