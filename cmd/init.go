@@ -1,0 +1,94 @@
+package cmd
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/yourusername/go-boilerplate/internal/config"
+	"github.com/yourusername/go-boilerplate/internal/generator"
+)
+
+var (
+	name     string
+	module   string
+	features []string
+)
+
+var initCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Initialize a new Go backend project",
+	Long: `Initialize a new production-ready Go backend project with clean architecture,
+REST + gRPC support, and optional features (auth, observability, docker).`,
+	RunE: runInit,
+}
+
+func init() {
+	initCmd.Flags().StringVar(&name, "name", "", "Project name")
+	initCmd.Flags().StringVar(&module, "module", "", "Go module name")
+	initCmd.Flags().StringSliceVar(&features, "features", []string{}, "Features to include (auth,observability,docker)")
+}
+
+func runInit(cmd *cobra.Command, args []string) error {
+	var cfg *config.Config
+	var err error
+
+	// Non-interactive mode if flags are provided
+	if name != "" && module != "" {
+		cfg = &config.Config{
+			ProjectName: name,
+			ModuleName:  module,
+			OutputDir:   fmt.Sprintf("./%s", name),
+			InitGit:     true,
+		}
+
+		// Parse features
+		for _, f := range features {
+			switch strings.TrimSpace(strings.ToLower(f)) {
+			case "auth":
+				cfg.Features.Auth = true
+			case "observability":
+				cfg.Features.Observability = true
+			case "docker":
+				cfg.Features.Docker = true
+			}
+		}
+	} else {
+		// Interactive mode
+		cfg, err = config.PromptForConfig()
+		if err != nil {
+			return fmt.Errorf("failed to collect configuration: %w", err)
+		}
+	}
+
+	// Validate configuration
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	// Generate project
+	gen := generator.New()
+	if err := gen.Generate(cfg); err != nil {
+		return fmt.Errorf("failed to generate project: %w", err)
+	}
+
+	// Success message
+	fmt.Printf("\n✓ Project '%s' generated successfully!\n\n", cfg.ProjectName)
+	fmt.Println("Next steps:")
+	fmt.Printf("  cd %s\n", cfg.OutputDir)
+	fmt.Println("  go mod download")
+	if cfg.Features.Docker {
+		fmt.Println("  docker-compose up -d")
+	}
+	fmt.Println("  make run")
+	fmt.Println("\nServer will start on:")
+	fmt.Println("  REST: http://localhost:8080/api/v1/")
+	fmt.Println("  gRPC: localhost:9090")
+	if cfg.Features.Observability {
+		fmt.Println("  Metrics: http://localhost:8080/metrics")
+	}
+	fmt.Println("  Health: http://localhost:8080/health")
+	fmt.Println()
+
+	return nil
+}

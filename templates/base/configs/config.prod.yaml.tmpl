@@ -1,0 +1,39 @@
+server:
+  port: ${APP_SERVER_PORT:8080}
+  host: 0.0.0.0
+  environment: production
+
+database:
+  host: ${APP_DATABASE_HOST}
+  port: ${APP_DATABASE_PORT:5432}
+  name: ${APP_DATABASE_NAME}
+  user: ${APP_DATABASE_USER}
+  password: ${APP_DATABASE_PASSWORD}
+  sslmode: require
+
+{{- if .Features.Auth}}
+auth:
+  jwt_secret: ${APP_AUTH_JWT_SECRET}
+  jwt_expiration: 3600
+  oauth_google:
+    client_id: ${APP_OAUTH_GOOGLE_CLIENT_ID}
+    client_secret: ${APP_OAUTH_GOOGLE_CLIENT_SECRET}
+    redirect_url: ${APP_OAUTH_GOOGLE_REDIRECT_URL}
+  oauth_github:
+    client_id: ${APP_OAUTH_GITHUB_CLIENT_ID}
+    client_secret: ${APP_OAUTH_GITHUB_CLIENT_SECRET}
+    redirect_url: ${APP_OAUTH_GITHUB_REDIRECT_URL}
+
+redis:
+  host: ${APP_REDIS_HOST}
+  port: ${APP_REDIS_PORT:6379}
+  password: ${APP_REDIS_PASSWORD}
+  db: 0
+{{- end}}
+
+{{- if .Features.Observability}}
+telemetry:
+  service_name: {{.ProjectName}}
+  metrics_enabled: true
+  tracing_enabled: true
+{{- end}}

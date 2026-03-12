@@ -1,0 +1,109 @@
+package config
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/spf13/viper"
+)
+
+// Config represents application configuration
+type Config struct {
+	Server   ServerConfig
+	Database DatabaseConfig
+	{{- if .Features.Auth}}
+	Auth     AuthConfig
+	Redis    RedisConfig
+	{{- end}}
+	{{- if .Features.Observability}}
+	Telemetry TelemetryConfig
+	{{- end}}
+}
+
+// ServerConfig holds server settings
+type ServerConfig struct {
+	Port int
+	Host string
+	Environment string
+}
+
+// DatabaseConfig holds database settings
+type DatabaseConfig struct {
+	Host     string
+	Port     int
+	Name     string
+	User     string
+	Password string
+	SSLMode  string
+}
+
+{{- if .Features.Auth}}
+// AuthConfig holds authentication settings
+type AuthConfig struct {
+	JWTSecret     string
+	JWTExpiration int
+	OAuthGoogle   OAuthConfig
+	OAuthGitHub   OAuthConfig
+}
+
+// OAuthConfig holds OAuth provider settings
+type OAuthConfig struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURL  string
+}
+
+// RedisConfig holds Redis settings
+type RedisConfig struct {
+	Host     string
+	Port     int
+	Password string
+	DB       int
+}
+{{- end}}
+
+{{- if .Features.Observability}}
+// TelemetryConfig holds observability settings
+type TelemetryConfig struct {
+	ServiceName    string
+	MetricsEnabled bool
+	TracingEnabled bool
+}
+{{- end}}
+
+// Load loads configuration from file and environment variables
+func Load() (*Config, error) {
+	v := viper.New()
+
+	// Set config file path
+	v.SetConfigName("config.dev")
+	v.SetConfigType("yaml")
+	v.AddConfigPath("./configs")
+	v.AddConfigPath(".")
+
+	// Set default values
+	v.SetDefault("server.port", 8080)
+	v.SetDefault("server.host", "0.0.0.0")
+	v.SetDefault("server.environment", "development")
+	v.SetDefault("database.sslmode", "disable")
+
+	// Enable environment variable override
+	v.SetEnvPrefix("APP")
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+
+	// Read config file
+	if err := v.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
+		}
+	}
+
+	// Unmarshal config
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	return &cfg, nil
+}

@@ -1,0 +1,54 @@
+package http
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"{{.ModuleName}}/internal/config"
+)
+
+// Server represents the HTTP server
+type Server struct {
+	router *gin.Engine
+	server *http.Server
+	config *config.Config
+}
+
+// NewServer creates a new HTTP server instance
+func NewServer(cfg *config.Config) *Server {
+	// Set Gin mode based on environment
+	if cfg.Server.Environment == "production" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	router := gin.Default()
+
+	// Register routes
+	v1 := router.Group("/api/v1")
+	{
+		v1.GET("/health", HealthCheck)
+	}
+
+	return &Server{
+		router: router,
+		config: cfg,
+	}
+}
+
+// Start starts the HTTP server
+func (s *Server) Start(addr string) error {
+	s.server = &http.Server{
+		Addr:    addr,
+		Handler: s.router,
+	}
+	return s.server.ListenAndServe()
+}
+
+// Shutdown gracefully shuts down the server
+func (s *Server) Shutdown(ctx context.Context) error {
+	if s.server != nil {
+		return s.server.Shutdown(ctx)
+	}
+	return nil
+}
