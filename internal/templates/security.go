@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// validateTemplatePath ensures the template path is within the templates directory
-func validateTemplatePath(templatesDir, templateName string) error {
+// validateTemplatePath ensures the template path doesn't contain path traversal attempts
+func validateTemplatePath(templateName string) error {
 	// Clean paths
 	cleanTemplateName := filepath.Clean(templateName)
 
@@ -16,22 +16,9 @@ func validateTemplatePath(templatesDir, templateName string) error {
 		return errors.New("path traversal detected in template name")
 	}
 
-	// Resolve absolute paths
-	templatePath := filepath.Join(templatesDir, cleanTemplateName)
-	absTemplatePath, err := filepath.Abs(templatePath)
-	if err != nil {
-		return err
-	}
-
-	absTemplatesDir, err := filepath.Abs(templatesDir)
-	if err != nil {
-		return err
-	}
-
-	// Ensure the resolved path is within templates directory
-	if !strings.HasPrefix(absTemplatePath, absTemplatesDir+string(filepath.Separator)) &&
-		absTemplatePath != absTemplatesDir {
-		return errors.New("template path is outside templates directory")
+	// Check for absolute paths
+	if filepath.IsAbs(cleanTemplateName) {
+		return errors.New("absolute paths not allowed in template names")
 	}
 
 	return nil
