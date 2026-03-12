@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ThinhDangDev/go-boilerplate/internal/config"
+	"github.com/ThinhDangDev/go-boilerplate/internal/generator"
 	"github.com/spf13/cobra"
-	"github.com/yourusername/go-boilerplate/internal/config"
-	"github.com/yourusername/go-boilerplate/internal/generator"
 )
 
 var (

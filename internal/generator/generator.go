@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/yourusername/go-boilerplate/internal/config"
-	"github.com/yourusername/go-boilerplate/internal/templates"
+	"github.com/ThinhDangDev/go-boilerplate/internal/config"
+	"github.com/ThinhDangDev/go-boilerplate/internal/templates"
 )
 
 // Generator handles project generation
@@ -128,8 +128,8 @@ func (g *Generator) generateBaseStructure(cfg *config.Config) error {
 	emptyDirs := []string{
 		"internal/domain",
 		"internal/application",
-		"internal/gen",      // For generated proto code
-		"api/openapi",       // For generated OpenAPI specs
+		"internal/gen", // For generated proto code
+		"api/openapi",  // For generated OpenAPI specs
 		"pkg/logger",
 		"pkg/validator",
 		"tests/integration",

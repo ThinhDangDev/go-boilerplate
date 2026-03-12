@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yourusername/go-boilerplate/internal/config"
-	"github.com/yourusername/go-boilerplate/internal/generator"
+	"github.com/ThinhDangDev/go-boilerplate/internal/config"
+	"github.com/ThinhDangDev/go-boilerplate/internal/generator"
 )
 
 // TestPhase2_CompleteProjectGeneration tests complete Phase 2 project generation
@@ -513,10 +513,10 @@ func TestPhase2_ProjectStructure(t *testing.T) {
 
 	// Verify directory organization follows hexagonal architecture
 	hexagonalDirs := []string{
-		"internal/ports",      // Adapters/Interfaces
-		"internal/domain",     // Business logic
+		"internal/ports",       // Adapters/Interfaces
+		"internal/domain",      // Business logic
 		"internal/application", // Use cases
-		"internal/adapters",   // Infrastructure
+		"internal/adapters",    // Infrastructure
 	}
 
 	for _, dir := range hexagonalDirs {

@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ThinhDangDev/go-boilerplate/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/yourusername/go-boilerplate/internal/config"
 )
 
 func TestAllFeatureCombinations(t *testing.T) {

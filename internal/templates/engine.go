@@ -9,7 +9,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/yourusername/go-boilerplate/internal/config"
+	"github.com/ThinhDangDev/go-boilerplate/internal/config"
 )
 
 // Engine handles template rendering
@@ -21,9 +21,9 @@ type Engine struct {
 func NewEngine() *Engine {
 	// Try multiple paths to find the templates directory
 	possiblePaths := []string{
-		"templates",                    // From project root
-		"../../templates",              // From internal/generator (tests)
-		"../../../templates",           // From internal/generator/subdir
+		"templates",                     // From project root
+		"../../templates",               // From internal/generator (tests)
+		"../../../templates",            // From internal/generator/subdir
 		filepath.Join(".", "templates"), // Current directory
 	}
 

@@ -1,4 +1,4 @@
-module github.com/yourusername/go-boilerplate
+module github.com/ThinhDangDev/go-boilerplate
 
 go 1.24.4
 

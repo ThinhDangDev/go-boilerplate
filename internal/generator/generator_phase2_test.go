@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yourusername/go-boilerplate/internal/config"
+	"github.com/ThinhDangDev/go-boilerplate/internal/config"
 )
 
 // setupPhase2Test ensures we're in the correct directory for template access

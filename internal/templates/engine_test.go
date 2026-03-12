@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yourusername/go-boilerplate/internal/config"
+	"github.com/ThinhDangDev/go-boilerplate/internal/config"
 )
 
 func TestEngine_Render(t *testing.T) {
